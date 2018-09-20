@@ -3,26 +3,29 @@ package file
 import (
 	"os"
 
-	proto "github.com/asim/go-file/proto"
+	proto "github.com/laoqiu/go-file/proto"
 	"github.com/micro/go-micro/client"
 	"github.com/micro/go-micro/server"
 )
 
 // Client is the client interface to access files
 type Client interface {
-	Open(filename string) (int64, error)
+	Open(filename string, new bool) (int64, error)
 	Stat(filename string) (*proto.StatResponse, error)
 	GetBlock(sessionId, blockId int64) ([]byte, error)
-	ReadAt(sessionId, offset, size int64) ([]byte, error)
 	Read(sessionId int64, buf []byte) (int, error)
+	ReadAt(sessionId, offset, size int64) ([]byte, error)
 	Close(sessionId int64) error
 	Download(filename, saveFile string) error
 	DownloadAt(filename, saveFile string, blockId int) error
+	Upload(localfile, filename string) error
+	UploadAt(localfile, filename string, blockId int) error
+	Remove(filename string) error
 }
 
 // NewClient returns a new Client which uses a micro Client
 func NewClient(service string, c client.Client) Client {
-	return &fc{proto.FileServiceClient(service, c)}
+	return &fc{proto.NewFileService(service, c)}
 }
 
 // NewHandler is a handler that can be registered with a micro Server

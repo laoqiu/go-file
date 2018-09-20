@@ -10,7 +10,7 @@ import (
 	b "github.com/micro/go-micro/broker/mock"
 	r "github.com/micro/go-micro/registry/mock"
 
-	proto "github.com/asim/go-file/proto"
+	proto "github.com/laoqiu/go-file/proto"
 	"golang.org/x/net/context"
 )
 
@@ -74,4 +74,32 @@ func TestFileServer(t *testing.T) {
 		t.Errorf("got %s, expected 'hello world'", string(b))
 		return
 	}
+
+	if err := cl.Upload("client_test.file", "upload_test.file"); err != nil {
+		t.Error(err)
+		return
+	}
+
+	sessionId, err := cl.Open("upload_test.file", false)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	buf := make([]byte, len(b))
+	if _, err := cl.Read(sessionId, buf); err != nil {
+		t.Error(err)
+		return
+	}
+
+	if string(buf) != "hello world" {
+		t.Errorf("got %s, expected 'hello world'", string(buf))
+		return
+	}
+
+	if err := cl.Remove("upload_test.file"); err != nil {
+		t.Error(err)
+		return
+	}
+
 }

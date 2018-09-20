@@ -1,14 +1,27 @@
 syntax = "proto3";
 
 service File {
+	rpc List(ListRequest) returns(ListResponse) {};
 	rpc Open(OpenRequest) returns(OpenResponse) {};
 	rpc Stat(StatRequest) returns(StatResponse) {};
 	rpc Read(ReadRequest) returns(ReadResponse) {};
+	rpc Write(WriteRequest) returns(WriteResponse) {};
 	rpc Close(CloseRequest) returns(CloseResponse) {};
+	rpc Remove(RemoveRequest) returns(RemoveResponse) {};
+}
+
+message ListRequest {
+	string prefix = 1;
+	repeated string suffix = 2;
+}
+
+message ListResponse {
+	repeated FileObj files = 1;
 }
 
 message OpenRequest {
 	string filename = 1;
+	bool new = 2;
 }
 
 message OpenResponse {
@@ -37,7 +50,6 @@ message ReadRequest {
 	int64 id = 1;
 	int64 offset = 2;
 	int64 size = 3;
-
 }
 
 message ReadResponse {
@@ -46,15 +58,24 @@ message ReadResponse {
 	bool eof = 3;
 }
 
-message GetRequest {
+message WriteRequest {
 	int64 id = 1;
-	int64 block_id = 2;
-}
-
-message GetResponse {
-	int64 block_id = 1;
-	int64 size = 2;
+	int64 offset = 2;
 	bytes data = 3;
 }
 
+message WriteResponse {
+	int64 size = 1;
+}
 
+message RemoveRequest {
+	string filename = 1;
+}
+
+message RemoveResponse {}
+
+message FileObj {
+	string filename = 1;
+	int64 size = 2;
+	int64 last_modified = 3;
+}
