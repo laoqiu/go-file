@@ -13,8 +13,7 @@ import (
 )
 
 const (
-	blockSize   = 512 * 1024
-	maxReadSize = 1 * 1024 * 1024
+	blockSize = 512 * 1024
 )
 
 type fc struct {
