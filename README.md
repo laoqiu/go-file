@@ -33,6 +33,8 @@ service.Init()
 
 client := file.NewClient("go.micro.srv.file", service.Client())
 client.Download("remote.file", "local.file")
+
+client.Upload("local.file", "upload.file")
 ```
 
 ## Hand Wavy Bench
