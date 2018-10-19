@@ -20,6 +20,7 @@ type Client interface {
 	DownloadAt(filename, saveFile string, blockId int) error
 	Upload(localfile, filename string) error
 	UploadAt(localfile, filename string, blockId int) error
+	UploadStream(b []byte, filename string, blockId int) error
 	Remove(filename string) error
 }
 

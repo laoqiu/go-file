@@ -102,4 +102,13 @@ func TestFileServer(t *testing.T) {
 		return
 	}
 
+	if err := cl.UploadStream(buf, "upload_test.file", 0); err != nil {
+		t.Error(err)
+		return
+	}
+
+	if err := cl.Remove("upload_test.file"); err != nil {
+		t.Error(err)
+		return
+	}
 }

@@ -1,6 +1,7 @@
 package file
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -175,6 +176,44 @@ func (c *fc) UploadAt(localfile, filename string, blockId int) error {
 		}
 	}
 	log.Printf("Upload %s completed", filename)
+
+	return nil
+}
+
+func (c *fc) UploadStream(b []byte, filename string, blockId int) error {
+	reader := bytes.NewReader(b)
+
+	blocks := int(reader.Size() / blockSize)
+	if reader.Size()%blockSize != 0 {
+		blocks += 1
+	}
+
+	sessionId, err := c.Open(filename, true)
+	if err != nil {
+		return err
+	}
+	defer c.Close(sessionId)
+
+	for i := blockId; i < blocks; i++ {
+		buf := make([]byte, blockSize)
+		n, err := reader.ReadAt(buf, int64(i)*blockSize)
+
+		if err != nil && err != io.EOF {
+			return err
+		}
+
+		buf = buf[:n]
+
+		if err := c.Write(sessionId, int64(i)*blockSize, buf); err != nil {
+			return err
+		}
+
+		if err == io.EOF {
+			break
+		}
+	}
+
+	log.Printf("Upload Stream %s completed", filename)
 
 	return nil
 }
