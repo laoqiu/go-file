@@ -21,24 +21,24 @@ type fc struct {
 	c proto.FileService
 }
 
-func (c *fc) Open(filename string, new bool) (int64, error) {
-	rsp, err := c.c.Open(context.TODO(), &proto.OpenRequest{Filename: filename, New: new})
+func (c *fc) Open(ctx context.Context, filename string, new bool) (int64, error) {
+	rsp, err := c.c.Open(ctx, &proto.OpenRequest{Filename: filename, New: new})
 	if err != nil {
 		return 0, err
 	}
 	return rsp.Id, nil
 }
 
-func (c *fc) Stat(filename string) (*proto.StatResponse, error) {
-	return c.c.Stat(context.TODO(), &proto.StatRequest{Filename: filename})
+func (c *fc) Stat(ctx context.Context, filename string) (*proto.StatResponse, error) {
+	return c.c.Stat(ctx, &proto.StatRequest{Filename: filename})
 }
 
-func (c *fc) GetBlock(sessionId, blockId int64) ([]byte, error) {
-	return c.ReadAt(sessionId, blockId*blockSize, blockSize)
+func (c *fc) GetBlock(ctx context.Context, sessionId, blockId int64) ([]byte, error) {
+	return c.ReadAt(ctx, sessionId, blockId*blockSize, blockSize)
 }
 
-func (c *fc) ReadAt(sessionId, offset, size int64) ([]byte, error) {
-	rsp, err := c.c.Read(context.TODO(), &proto.ReadRequest{Id: sessionId, Size: size, Offset: offset})
+func (c *fc) ReadAt(ctx context.Context, sessionId, offset, size int64) ([]byte, error) {
+	rsp, err := c.c.Read(ctx, &proto.ReadRequest{Id: sessionId, Size: size, Offset: offset})
 	if err != nil {
 		return nil, err
 	}
@@ -58,8 +58,8 @@ func (c *fc) ReadAt(sessionId, offset, size int64) ([]byte, error) {
 	return rsp.Data, nil
 }
 
-func (c *fc) Read(sessionId int64, buf []byte) (int, error) {
-	b, err := c.ReadAt(sessionId, 0, int64(cap(buf)))
+func (c *fc) Read(ctx context.Context, sessionId int64, buf []byte) (int, error) {
+	b, err := c.ReadAt(ctx, sessionId, 0, int64(cap(buf)))
 	if err != nil {
 		return 0, err
 	}
@@ -67,22 +67,22 @@ func (c *fc) Read(sessionId int64, buf []byte) (int, error) {
 	return len(b), nil
 }
 
-func (c *fc) Close(sessionId int64) error {
-	_, err := c.c.Close(context.TODO(), &proto.CloseRequest{Id: sessionId})
+func (c *fc) Close(ctx context.Context, sessionId int64) error {
+	_, err := c.c.Close(ctx, &proto.CloseRequest{Id: sessionId})
 	return err
 }
 
-func (c *fc) Write(sessionId, offset int64, buf []byte) error {
-	_, err := c.c.Write(context.TODO(), &proto.WriteRequest{Id: sessionId, Offset: offset, Data: buf})
+func (c *fc) Write(ctx context.Context, sessionId, offset int64, buf []byte) error {
+	_, err := c.c.Write(ctx, &proto.WriteRequest{Id: sessionId, Offset: offset, Data: buf})
 	return err
 }
 
 func (c *fc) Download(filename, saveFile string) error {
-	return c.DownloadAt(filename, saveFile, 0)
+	return c.DownloadAt(context.Background(), filename, saveFile, 0)
 }
 
-func (c *fc) DownloadAt(filename, saveFile string, blockId int) error {
-	stat, err := c.Stat(filename)
+func (c *fc) DownloadAt(ctx context.Context, filename, saveFile string, blockId int) error {
+	stat, err := c.Stat(ctx, filename)
 	if err != nil {
 		return err
 	}
@@ -103,14 +103,14 @@ func (c *fc) DownloadAt(filename, saveFile string, blockId int) error {
 	}
 	defer file.Close()
 
-	sessionId, err := c.Open(filename, false)
+	sessionId, err := c.Open(ctx, filename, false)
 	if err != nil {
 		return err
 	}
-	defer c.Close(sessionId)
+	defer c.Close(ctx, sessionId)
 
 	for i := blockId; i < blocks; i++ {
-		buf, rerr := c.GetBlock(sessionId, int64(i))
+		buf, rerr := c.GetBlock(ctx, sessionId, int64(i))
 		if rerr != nil && rerr != io.EOF {
 			return rerr
 		}
@@ -132,10 +132,10 @@ func (c *fc) DownloadAt(filename, saveFile string, blockId int) error {
 }
 
 func (c *fc) Upload(localfile, filename string) error {
-	return c.UploadAt(localfile, filename, 0)
+	return c.UploadAt(context.Background(), localfile, filename, 0)
 }
 
-func (c *fc) UploadAt(localfile, filename string, blockId int) error {
+func (c *fc) UploadAt(ctx context.Context, localfile, filename string, blockId int) error {
 
 	file, err := os.OpenFile(localfile, os.O_RDONLY, 0)
 	if err != nil {
@@ -152,11 +152,11 @@ func (c *fc) UploadAt(localfile, filename string, blockId int) error {
 		blocks += 1
 	}
 
-	sessionId, err := c.Open(filename, true)
+	sessionId, err := c.Open(ctx, filename, true)
 	if err != nil {
 		return err
 	}
-	defer c.Close(sessionId)
+	defer c.Close(ctx, sessionId)
 
 	for i := blockId; i < blocks; i++ {
 		buf := make([]byte, blockSize)
@@ -167,7 +167,7 @@ func (c *fc) UploadAt(localfile, filename string, blockId int) error {
 
 		buf = buf[:n]
 
-		if err := c.Write(sessionId, int64(i)*blockSize, buf); err != nil {
+		if err := c.Write(ctx, sessionId, int64(i)*blockSize, buf); err != nil {
 			return err
 		}
 
@@ -180,7 +180,7 @@ func (c *fc) UploadAt(localfile, filename string, blockId int) error {
 	return nil
 }
 
-func (c *fc) UploadStream(b []byte, filename string, blockId int) error {
+func (c *fc) UploadStream(ctx context.Context, b []byte, filename string, blockId int) error {
 	reader := bytes.NewReader(b)
 
 	blocks := int(reader.Size() / blockSize)
@@ -188,11 +188,11 @@ func (c *fc) UploadStream(b []byte, filename string, blockId int) error {
 		blocks += 1
 	}
 
-	sessionId, err := c.Open(filename, true)
+	sessionId, err := c.Open(ctx, filename, true)
 	if err != nil {
 		return err
 	}
-	defer c.Close(sessionId)
+	defer c.Close(ctx, sessionId)
 
 	for i := blockId; i < blocks; i++ {
 		buf := make([]byte, blockSize)
@@ -204,7 +204,7 @@ func (c *fc) UploadStream(b []byte, filename string, blockId int) error {
 
 		buf = buf[:n]
 
-		if err := c.Write(sessionId, int64(i)*blockSize, buf); err != nil {
+		if err := c.Write(ctx, sessionId, int64(i)*blockSize, buf); err != nil {
 			return err
 		}
 
@@ -218,7 +218,7 @@ func (c *fc) UploadStream(b []byte, filename string, blockId int) error {
 	return nil
 }
 
-func (c *fc) Remove(filename string) error {
-	_, err := c.c.Remove(context.TODO(), &proto.RemoveRequest{Filename: filename})
+func (c *fc) Remove(ctx context.Context, filename string) error {
+	_, err := c.c.Remove(ctx, &proto.RemoveRequest{Filename: filename})
 	return err
 }

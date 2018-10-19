@@ -6,22 +6,23 @@ import (
 	proto "github.com/laoqiu/go-file/proto"
 	"github.com/micro/go-micro/client"
 	"github.com/micro/go-micro/server"
+	"golang.org/x/net/context"
 )
 
 // Client is the client interface to access files
 type Client interface {
-	Open(filename string, new bool) (int64, error)
-	Stat(filename string) (*proto.StatResponse, error)
-	GetBlock(sessionId, blockId int64) ([]byte, error)
-	Read(sessionId int64, buf []byte) (int, error)
-	ReadAt(sessionId, offset, size int64) ([]byte, error)
-	Close(sessionId int64) error
+	Open(ctx context.Context, filename string, new bool) (int64, error)
+	Stat(ctx context.Context, filename string) (*proto.StatResponse, error)
+	GetBlock(ctx context.Context, sessionId, blockId int64) ([]byte, error)
+	Read(ctx context.Context, sessionId int64, buf []byte) (int, error)
+	ReadAt(ctx context.Context, sessionId, offset, size int64) ([]byte, error)
+	Close(ctx context.Context, sessionId int64) error
 	Download(filename, saveFile string) error
-	DownloadAt(filename, saveFile string, blockId int) error
+	DownloadAt(ctx context.Context, filename, saveFile string, blockId int) error
 	Upload(localfile, filename string) error
-	UploadAt(localfile, filename string, blockId int) error
-	UploadStream(b []byte, filename string, blockId int) error
-	Remove(filename string) error
+	UploadAt(ctx context.Context, localfile, filename string, blockId int) error
+	UploadStream(ctx context.Context, b []byte, filename string, blockId int) error
+	Remove(ctx context.Context, filename string) error
 }
 
 // NewClient returns a new Client which uses a micro Client

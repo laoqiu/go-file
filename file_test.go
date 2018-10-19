@@ -80,14 +80,14 @@ func TestFileServer(t *testing.T) {
 		return
 	}
 
-	sessionId, err := cl.Open("upload_test.file", false)
+	sessionId, err := cl.Open(context.Background(), "upload_test.file", false)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
 	buf := make([]byte, len(b))
-	if _, err := cl.Read(sessionId, buf); err != nil {
+	if _, err := cl.Read(context.Background(), sessionId, buf); err != nil {
 		t.Error(err)
 		return
 	}
@@ -97,17 +97,17 @@ func TestFileServer(t *testing.T) {
 		return
 	}
 
-	if err := cl.Remove("upload_test.file"); err != nil {
+	if err := cl.Remove(context.Background(), "upload_test.file"); err != nil {
 		t.Error(err)
 		return
 	}
 
-	if err := cl.UploadStream(buf, "upload_test.file", 0); err != nil {
+	if err := cl.UploadStream(context.Background(), buf, "upload_test.file", 0); err != nil {
 		t.Error(err)
 		return
 	}
 
-	if err := cl.Remove("upload_test.file"); err != nil {
+	if err := cl.Remove(context.Background(), "upload_test.file"); err != nil {
 		t.Error(err)
 		return
 	}
